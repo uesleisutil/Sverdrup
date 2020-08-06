@@ -8,14 +8,14 @@
 #include <LiquidCrystal_I2C.h>
 
 // Data wire is connected to ESP32 GPIO 21
-#define ONE_WIRE_BUS 3
+#define ONE_WIRE_BUS 8
 // Setup a oneWire instance to communicate with a OneWire device
 OneWire oneWire(ONE_WIRE_BUS);
 // Pass our oneWire reference to Dallas Temperature sensor 
 DallasTemperature sensors(&oneWire);
 
 // change this to match your SD shield or module;
-const int chipSelect = 4; 
+const int chipSelect = 10; 
 
 // BME280 
 Adafruit_BME280 bme;
@@ -45,24 +45,23 @@ void setup() {
 
   //LCD.
   lcd.begin (16,2);
-  
-  // setup for the SD card
+
+  // SD begin.
   if(!SD.begin(chipSelect)) {
     Serial.println("initialization failed!");
-    Serial.println(SD.begin(chipSelect)); 
     return;
   }
-
   Serial.println("initialization done.");
+    
 
+  // setup for the dSD card
   myFile=SD.open("data.txt", FILE_WRITE);
-
-  // if the file opened ok, write to it:
   if (myFile) {
     Serial.println("File opened ok");
+    // print the headings for our data
+    myFile.println("DS18B20_temp (ºC),BME_temp (ºC),BME_rh (ºC),BME_pres (hPa)");
   }
-
-  pinMode(LED_BUILTIN, OUTPUT);
+  myFile.close();
 }
 
 void printingdata() {
@@ -79,9 +78,6 @@ void printingdata() {
 }
 
 void loggingDS18B20() {
-  // Reading temperature or humidity takes about 250 milliseconds!
-  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-  // Read temperature as Celsius
   sensors.requestTemperatures(); 
   temp_ds18b20 = sensors.getTempCByIndex(0); // Temperature in Celsius
 
@@ -93,33 +89,43 @@ void loggingDS18B20() {
 }
 
 void loggingBME280() {
-  // Reading temperature or humidity takes about 250 milliseconds!
   temp_bme280 = bme.readTemperature();
+  // Check if any reads failed and exit early (to try again).
+  if  (isnan(temp_bme280) /*|| isnan(f)*/) {
+    Serial.println("Failed to read temperature from BME280 sensor!");
+    return;
+  }
   rh_bme280   = bme.readHumidity();
+  if  (isnan(rh_bme280) /*|| isnan(f)*/) {
+    Serial.println("Failed to read humidity from BME280 sensor!");
+    return;
+  }
   pres_bme280 = bme.readPressure() / 100.0F;
+  if  (isnan(pres_bme280) /*|| isnan(f)*/) {
+    Serial.println("Failed to read pressure from BME280 sensor!");
+    return;
+  }
 }
 
 void savingdata() {
+  myFile=SD.open("data.txt", FILE_WRITE);
   dataMessage = String(temp_ds18b20) + "," + String(temp_bme280) + 
                   "," + String(rh_bme280) + "," + String(pres_bme280) + "\r\n";
   myFile.print(dataMessage);
+  myFile.close();
 
 }
 
-
 void loop() {
-  lcd.setBacklight(30);
-  
-  digitalWrite(LED_BUILTIN,HIGH);
-  delay(1000);
+  delay(2000);
   loggingDS18B20();
-  delay(1000);
+  delay(2000);
   loggingBME280();
-  delay(1000);
+  delay(2000);
   savingdata();
-  delay(1000);
+  delay(2000);
   printingdata();
-  delay(1000);
+  delay(2000);
 
   lcd.setCursor(0, 0);
   lcd.print(temp_ds18b20); 
@@ -136,7 +142,5 @@ void loop() {
   lcd.setCursor(9, 1);  
   lcd.print("hPa");
 
-  delay(1000);
   Narcoleptic.delay(SLEEP_TIME); // During this time power consumption is minimised
-  digitalWrite(LED_BUILTIN,LOW); //led off
 }
