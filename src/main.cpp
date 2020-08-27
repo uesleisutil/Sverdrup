@@ -27,8 +27,8 @@ RTC_DS3231 rtc;
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 const int chipSelect = 10;
 int interval_sec = 0; //Alarm interval in seconds
-int interval_min = 1; //Alarm interval in minutes
-int interval_hr = 00; //Alarm interval in hours
+int interval_min = 0; //Alarm interval in minutes
+int interval_hr = 1; //Alarm interval in hours
 char file_name[25] = "Readings.csv";
 
 // Led.
@@ -49,7 +49,7 @@ void setup () {
     digitalWrite(led, LOW);   
     while (1);
   }
-  rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   pinMode(wakePin, INPUT_PULLUP);
   rtc.armAlarm(1, false);
   rtc.clearAlarm(1);
